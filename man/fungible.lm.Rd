@@ -5,8 +5,14 @@
 \alias{fungible.lm}
 \title{Locate extrema of fungible OLS regression weights}
 \usage{
-\method{fungible}{lm}(object, theta = 0.005, Nstarts = 1000,
-  MaxMin = c("min", "max"), silent = FALSE, ...)
+\method{fungible}{lm}(
+  object,
+  theta = 0.005,
+  Nstarts = 1000,
+  MaxMin = c("min", "max"),
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted model object of class "lm" or "summary.lm".}
@@ -35,5 +41,5 @@ lm_mtcars_fung <- fungible(lm_mtcars, Nstarts = 100)
 \references{
 Waller, N. G., & Jones, J. A. (2009).
 Locating the extrema of fungible regression weights.
-\emph{Psychometrika, 74}(4), 589–602. \url{https://doi.org/10/c3wbtd}
+\emph{Psychometrika, 74}(4), 589–602. \doi{10.1007/s11336-008-9087-7}
 }

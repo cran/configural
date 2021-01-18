@@ -15,7 +15,7 @@
 #' @references
 #' Shieh, G. (2008).
 #' Improved shrinkage estimation of squared multiple correlation coefficient and squared cross-validity coefficient.
-#' _Organizational Research Methods, 11_(2), 387–407. <https://doi.org/10/bcwqf3>
+#' _Organizational Research Methods, 11_(2), 387–407. \doi{10.1177/1094428106292901}
 #'
 #' @examples
 #' adjust_Rsq(.55, 100, 6, adjust = "pop")
@@ -41,11 +41,11 @@ adjust_Rsq <- function(Rsq, n, p, adjust = c("fisher", "pop", "cv")) {
 #'
 #' @param x A vector, matrix, or data.frame
 #' @param na.rm Logical. If `TRUE`, remove `NA` values before processing
-#' @param zero Logical, If `TRUE`, if there are any zeroes, retun 0, else, return the harmonic mean of the non-zero elements
+#' @param zero Logical, If `TRUE`, if there are any zeroes, return 0, else, return the harmonic mean of the non-zero elements
 #'
 #' @return The harmonic mean of x
 #'
-#' @author Adapted from [psych::harmonic.mean()] by William Revelle
+#' @author Adapted from `psych::harmonic.mean()` by William Revelle
 #' @export
 #'
 #' @encoding UTF-8
@@ -78,12 +78,10 @@ harmonic_mean <- function(x, na.rm = TRUE, zero = TRUE) {
 #'
 #' @keywords internal
 #'
-#' @importFrom dplyr %>%
-#'
 #' @references
 #' Nel, D. G. (1985).
 #' A matrix derivation of the asymptotic covariance matrix of sample correlation coefficients.
-#' _Linear Algebra and Its Applications, 67_, 137–145. <https://doi.org/10/c75jmg>
+#' _Linear Algebra and Its Applications, 67_, 137–145. \doi{10.1016/0024-3795(85)90191-0}
 #'
 #' @examples
 #' transition(5)
@@ -101,7 +99,7 @@ transition <- function(p) {
     p2 <- p2 - 1
   }
 
-  Kpc <- solve(t(Dp) %*% Dp) %*% t(Dp) %>% `[`(-rows, )
+  Kpc <- (solve(t(Dp) %*% Dp) %*% t(Dp))[-rows, ]
 
   return(Kpc)
 
@@ -123,7 +121,7 @@ transition <- function(p) {
 #' @references
 #' Nel, D. G. (1985).
 #' A matrix derivation of the asymptotic covariance matrix of sample correlation coefficients.
-#' _Linear Algebra and Its Applications, 67_, 137–145. <https://doi.org/10/c75jmg>
+#' _Linear Algebra and Its Applications, 67_, 137–145. \doi{10.1016/0024-3795(85)90191-0}
 #'
 #' @examples
 #' cor_covariance(matrix(c(1, .2, .3, .2, 1, .3, .3, .3, 1), ncol = 3), 100)
@@ -132,7 +130,7 @@ cor_covariance <- function(r, n) {
   id <- diag(p)
 
   Ms <-
-    matrix(
+    (matrix(
       c(rep(
         c(rep(
           c(1, rep(
@@ -141,13 +139,10 @@ cor_covariance <- function(r, n) {
           1, rep(0, times = p) ), times = p - 1),
         rep(c(1, rep(0, times = p * p + (p - 1))), times = p - 1),
         1),
-      nrow = p^2) %>%
-    `+`(diag(p^2)) / 2
+      nrow = p^2) + diag(p^2) ) / 2
 
   Md <-
-    rep(0, p^2) %>%
-    replace(seq(1, (p^2), by = (p + 1)), 1) %>%
-    diag()
+    diag(replace(rep(0, p^2), seq(1, (p^2), by = (p + 1)), 1))
 
   Psi <-
     0.5 * (4 * Ms %*% (r %x% r) %*% Ms -
@@ -157,7 +152,9 @@ cor_covariance <- function(r, n) {
              Md %*% (id %x% r + r %x% id))
 
   Kpc <- transition(p)
-  return((Kpc %*% Psi %*% t(Kpc)) / (n - 3))
+  out <- (Kpc %*% Psi %*% t(Kpc)) / (n - 3)
+  rownames(out) <- colnames(out) <- cor_labels(colnames(r))
+  return(out)
 }
 
 #' Generate labels for correlations from a vector of variable names
@@ -198,7 +195,7 @@ cor_labels <- function(var_names) {
 #' @references
 #' Nel, D. G. (1985).
 #' A matrix derivation of the asymptotic covariance matrix of sample correlation coefficients.
-#' _Linear Algebra and Its Applications, 67_, 137–145. <https://doi.org/10/c75jmg>
+#' _Linear Algebra and Its Applications, 67_, 137–145. \doi{10.1016/0024-3795(85)90191-0}
 #'
 #' Wiernik, B. M. (2018).
 #' _Accounting for dependency in meta-analytic structural equations modeling: A flexible alternative to generalized least squares and two-stage structural equations modeling._
@@ -210,24 +207,24 @@ cor_labels <- function(var_names) {
 cor_covariance_meta <- function(r, n, sevar, source = NULL, rho = NULL, sevar_rho = NULL, n_overlap = NULL) {
   if (is.null(colnames(r))) colnames(r) <- 1:ncol(r)
   if (is.null(rownames(r))) rownames(r) <- 1:nrow(r)
-  if (!all(colnames(r) == rownames(r))) stop("Row names and column names of 'r' must be the same")
+  if (!all(colnames(r) == rownames(r))) stop("Row names and column names of `r` must be the same")
   var_names <- colnames(r)
-  cor_names <- outer(var_names, var_names, paste, sep = "-") %>% t() %>% vechs()
+  cor_names <- cor_labels(var_names)
 
-  if (is.null(colnames(n))) if (!all(colnames(n) == var_names)) stop("Column names of 'n' and 'r' must be the same")
-  if (is.null(rownames(n))) if (!all(rownames(n) == var_names)) stop("Row names of 'n' and 'r' must be the same")
+  if (is.null(colnames(n))) if (!all(colnames(n) == var_names)) stop("Column names of `n` and `r` must be the same")
+  if (is.null(rownames(n))) if (!all(rownames(n) == var_names)) stop("Row names of `n` and `r` must be the same")
 
-  if (is.null(colnames(sevar))) if (!all(colnames(sevar) == var_names)) stop("Column names of 'sevar' and 'r' must be the same")
-  if (is.null(rownames(sevar))) if (!all(rownames(sevar) == var_names)) stop("Row names of 'sevar' and 'r' must be the same")
+  if (is.null(colnames(sevar))) if (!all(colnames(sevar) == var_names)) stop("Column names of `sevar` and `r` must be the same")
+  if (is.null(rownames(sevar))) if (!all(rownames(sevar) == var_names)) stop("Row names of `sevar` and `r` must be the same")
 
   if (!is.null(source)) {
-    if (is.null(colnames(source))) if (!all(colnames(source) == var_names)) stop("Column names of 'source' and 'r' must be the same")
-    if (is.null(rownames(source))) if (!all(rownames(source) == var_names)) stop("Row names of 'source' and 'r' must be the same")
+    if (is.null(colnames(source))) if (!all(colnames(source) == var_names)) stop("Column names of `source` and `r` must be the same")
+    if (is.null(rownames(source))) if (!all(rownames(source) == var_names)) stop("Row names of `source` and `r` must be the same")
   }
 
   if (!is.null(n_overlap)) {
-    if (!is.null(colnames(n_overlap))) if (!all(colnames(n_overlap) == cor_names)) stop("Column names of 'n_overlap' must be identical to 'cor_labels(colnames(r))'")
-    if (!is.null(rownames(n_overlap))) if (!all(rownames(n_overlap) == cor_names)) stop("Row names of 'n_overlap' must be identical to 'cor_labels(colnames(r))'")
+    if (!is.null(colnames(n_overlap))) if (!all(colnames(n_overlap) == cor_names)) stop("Column names of `n_overlap` must be identical to the result of:\n  `cor_labels(colnames(r))`")
+    if (!is.null(rownames(n_overlap))) if (!all(rownames(n_overlap) == cor_names)) stop("Row names of `n_overlap` must be identical to the result of:\n  `cor_labels(colnames(r))`")
   }
 
   r <- vechs2full(vechs(r))
@@ -254,7 +251,7 @@ cor_covariance_meta <- function(r, n, sevar, source = NULL, rho = NULL, sevar_rh
   id <- diag(p)
 
   Ms <-
-    matrix(
+    (matrix(
       c(rep(
         c(rep(
           c(1, rep(
@@ -263,13 +260,9 @@ cor_covariance_meta <- function(r, n, sevar, source = NULL, rho = NULL, sevar_rh
           1, rep(0, times = p) ), times = p - 1),
         rep(c(1, rep(0, times = p * p + (p - 1))), times = p - 1),
         1),
-      nrow = p^2) %>%
-    `+`(diag(p^2)) / 2
+      nrow = p^2) + diag(p^2)) / 2
 
-  Md <-
-    rep(0, p^2) %>%
-    replace(seq(1, (p^2), by = (p + 1)), 1) %>%
-    diag()
+  Md <- diag(replace(rep(0, p^2), seq(1, (p^2), by = (p + 1)), 1))
 
   Psi <-
     0.5 * (4 * Ms %*% (r %x% r) %*% Ms -
@@ -588,10 +581,10 @@ rvec <- function(x) {
 #' These functions return the symmetric matrix that produces the given
 #' half-vectorization result.
 #'
-#' @details The input consists of a vector ofthe elements in the lower triangle
+#' @details The input consists of a vector of the elements in the lower triangle
 #' of the resulting matrix (for `vech2full`, including the elements along the diagonal
 #' of the matrix, as a column vector), filled column-wise. For `vechs2full`,
-#' the diagonal values are filled as 1 by defualt, alternative values can be
+#' the diagonal values are filled as 1 by default, alternative values can be
 #' specified using the `diag` argument. The inverse half-vectorization takes a
 #' vector and reconstructs a symmetric matrix such that vech2full(vech(x)) is
 #' identical to x if x is symmetric.

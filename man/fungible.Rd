@@ -5,8 +5,14 @@
 \alias{fungible}
 \title{Locate extrema of fungible weights for regression and related models}
 \usage{
-fungible(object, theta = 0.005, Nstarts = 1000, MaxMin = c("min",
-  "max"), silent = FALSE, ...)
+fungible(
+  object,
+  theta = 0.005,
+  Nstarts = 1000,
+  MaxMin = c("min", "max"),
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted model object. Currently supported classes are: "cpa"}
@@ -41,12 +47,12 @@ mind_fung <- fungible(mind, Nstarts = 100)
 \references{
 Waller, N. G. (2008).
 Fungible weights in multiple regression.
-\emph{Psychometrika, 73}(4), 691–703. \url{https://doi.org/10/c6h5qn}
+\emph{Psychometrika, 73}(4), 691–703. \doi{10.1007/s11336-008-9066-z}
 
 Waller, N. G., & Jones, J. A. (2009).
 Locating the extrema of fungible regression weights.
-\emph{Psychometrika, 74}(4), 589–602. \url{https://doi.org/10/c3wbtd}
+\emph{Psychometrika, 74}(4), 589–602. \doi{10.1007/s11336-008-9087-7}
 }
 \author{
-Niels Waller, Jeff Jones, Brenton M. Wiernik. Adapted from \code{\link[fungible:fungibleExtrema]{fungible::fungibleExtrema()}}.
+Niels Waller, Jeff Jones, Brenton M. Wiernik. Adapted from \code{fungible::fungibleExtrema()}.
 }

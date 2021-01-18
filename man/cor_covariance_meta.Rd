@@ -6,8 +6,15 @@
 \title{Estimate the asymptotic sampling covariance matrix for the unique elements of
 a meta-analytic correlation matrix}
 \usage{
-cor_covariance_meta(r, n, sevar, source = NULL, rho = NULL,
-  sevar_rho = NULL, n_overlap = NULL)
+cor_covariance_meta(
+  r,
+  n,
+  sevar,
+  source = NULL,
+  rho = NULL,
+  sevar_rho = NULL,
+  n_overlap = NULL
+)
 }
 \arguments{
 \item{r}{A meta-analytic matrix of observed correlations (can be full or lower-triangular).}
@@ -41,7 +48,7 @@ cor_covariance_meta(r = mindfulness$r, n = mindfulness$n,
 \references{
 Nel, D. G. (1985).
 A matrix derivation of the asymptotic covariance matrix of sample correlation coefficients.
-\emph{Linear Algebra and Its Applications, 67}, 137–145. \url{https://doi.org/10/c75jmg}
+\emph{Linear Algebra and Its Applications, 67}, 137–145. \doi{10.1016/0024-3795(85)90191-0}
 
 Wiernik, B. M. (2018).
 \emph{Accounting for dependency in meta-analytic structural equations modeling: A flexible alternative to generalized least squares and two-stage structural equations modeling.}

@@ -5,22 +5,29 @@
 \alias{cpa_mat}
 \title{Conduct criterion profile analysis using a correlation matrix}
 \usage{
-cpa_mat(formula, cov_mat, n = Inf, se_var_mat = NULL,
-  se_beta_method = c("normal", "lm"), adjust = c("fisher", "pop",
-  "cv"), conf_level = 0.95, ...)
+cpa_mat(
+  formula,
+  cov_mat,
+  n = NULL,
+  se_var_mat = NULL,
+  se_beta_method = c("normal", "lm"),
+  adjust = c("fisher", "pop", "cv"),
+  conf_level = 0.95,
+  ...
+)
 }
 \arguments{
 \item{formula}{Regression formula with a single outcome variable on the left-hand side and one or more predictor variables on the right-hand side (e.g., Y ~ X1 + X2).}
 
 \item{cov_mat}{Correlation matrix containing the variables to be used in the regression.}
 
-\item{n}{Sample size to be used in calculating adjusted R-squared and, if \code{se_var_mat} is NULL, standard errors.}
+\item{n}{Sample size. Used to compute adjusted R-squared and, if \code{se_var_mat} is NULL, standard errors. If NULL and \code{se_var_mat} is specified, effective sample size is computed based on \code{se_var_mat} (cf. Revelle et al., 2017).}
 
 \item{se_var_mat}{Optional. The sampling error covariance matrix among the unique elements of \code{cov_mat}. Used to calculate standard errors. If not supplied, the sampling covariance matrix is calculated using \code{n}.}
 
 \item{se_beta_method}{Method to use to estimate the standard errors of standardized regression (beta) coefficients. Current options include "normal" (use the Jones-Waller, 2015, normal-theory approach) and "lm" (estimate standard errors using conventional regression formulas).}
 
-\item{adjust}{Method to adjust R-squared for overfitting. See \code{\link{adjust_Rsq}} for details.}
+\item{adjust}{Method to adjust R-squared for overfitting. See \code{\link[=adjust_Rsq]{adjust_Rsq()}} for details.}
 
 \item{conf_level}{Confidence level to use for confidence intervals.}
 
@@ -35,17 +42,22 @@ Conduct criterion profile analysis using a correlation matrix
 \examples{
 sevar <- cor_covariance_meta(mindfulness$r, mindfulness$n, mindfulness$sevar_r, mindfulness$source)
 cpa_mat(mindfulness ~ ES + A + C + Ex + O,
-          cov_mat = mindfulness$rho,
-          n = harmonic_mean(vechs(mindfulness$n)),
+          cov_mat = mindfulness$r,
+          n = NULL,
           se_var_mat = sevar,
           adjust = "pop")
 }
 \references{
 Jones, J. A., & Waller, N. G. (2015).
 The normal-theory and asymptotic distribution-free (ADF) covariance matrix of standardized regression coefficients: Theoretical extensions and finite sample behavior.
-\emph{Psychometrika, 80}(2), 365–378. \url{https://doi.org/10/gckfx5}
+\emph{Psychometrika, 80}(2), 365–378. \doi{10.1007/s11336-013-9380-y}
+
+Revelle, W., Condon, D. M., Wilt, J., French, J. A., Brown, A., & Elleman, L. G. (2017).
+Web- and phone-based data collection using planned missing designs.
+In N. G. Fielding, R. M. Lee, & G. Blank, \emph{The SAGE Handbook of Online Research Methods} (pp. 578–594).
+SAGE Publications. \doi{10.4135/9781473957992.n33}
 
 Wiernik, B. M., Wilmot, M. P., Davison, M. L., & Ones, D. S. (2019).
-\emph{Meta-analytic criterion profile analysis.}
-Manuscript submitted for publication.
+Meta-analytic criterion profile analysis.
+\emph{Psychological Methods} \doi{10.1037/met0000305}
 }

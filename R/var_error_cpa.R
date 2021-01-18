@@ -2,21 +2,27 @@
 #'
 #' @param Rxx An intercorrelation matrix among the predictor variables
 #' @param rxy A vector of predictor–criterion correlations
-#' @param n The sample size
-#' @param se_var_mat The method used to calculate the sampling covariance matrix for the unique elements of Rxx and rxy. Can be "normal" to estimate the covariance matrix using "n" or a matrix of sampling covariance values.
+#' @param n The sample size. If NULL and `se_var_mat` is provided, `n` will be estimated as the effective sample size based on `se_var_mat`. See [n_effective_R2()].
+#' @param se_var_mat A matrix of sampling covariance values for the elements of `Rxx` and `rxy`. If NULL, generated using the Normal theory covariance matrix based on `n`.
 #' @param adjust Method to adjust R-squared for overfitting. See \code{\link{adjust_Rsq}} for details.
 #'
-#' @return A list containing sampling covariance matrices or sampling erorr variance estimates for CPA parameters
+#' @return A list containing sampling covariance matrices or sampling error variance estimates for CPA parameters
 #' @export
 #'
 #' @encoding UTF-8
 #'
 #' @examples
-#' \dontrun{
-#'   var_error_cpa(mindful_rho[1:5, 1:5], mindful_rho[1:5, 6],
-#'           n = 17060)
-#' }
-var_error_cpa <- function(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher", "pop", "cv")) {
+#' var_error_cpa(mindfulness$rho[1:5, 1:5], mindfulness$rho[1:5, 6], n = 17060)
+var_error_cpa <- function(Rxx, rxy, n = NULL, se_var_mat = NULL, adjust = c("fisher", "pop", "cv")) {
+  if (is.null(n) & is.null(se_var_mat)) {
+    stop("At least one of `n` or `se_var_mat` must be supplied.")
+  }
+  if (!is.null(se_var_mat)) {
+    if (!inherits(se_var_mat, "matrix")) {
+      stop("`se_var_mat` must be either NULL or a matrix of sampling covariances.")
+    }
+  }
+
   adjust <- match.arg(adjust)
   Rxx <- as.matrix(Rxx)
   p <- ncol(Rxx)
@@ -33,7 +39,7 @@ var_error_cpa <- function(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher
   } else {
     sR <- rbind(cbind(Rxx, rxy), c(rxy, 1))
 
-    if (inherits(se_var_mat, "matrix") ) {
+    if (inherits(se_var_mat, "matrix")) {
       Sigma <- se_var_mat
     } else {
       Sigma <- cor_covariance(sR, n)
@@ -55,74 +61,103 @@ var_error_cpa <- function(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher
     beta <- Rinv %*% rxy
     dbeta.drxx <- -2 * (t(beta) %x% Rinv) %*% t(Kpc)
     dbeta.drxy <- Rinv
-    j.beta <- cbind(dbeta.drxx, dbeta.drxy)
-    j.beta <- j.beta[, match(old.ord, new.ord)]
+    j.beta <- cbind(dbeta.drxx, dbeta.drxy)[, match(old.ord, new.ord)]
     v.beta <- j.beta %*% Sigma %*% t(j.beta)
 
     # BStar
     bstar <- Q %*% beta
-    dbstar.drxx <- Q %*% dbeta.drxx
-    dbstar.drxy <- Rinv
-    j.bstar <- cbind(dbstar.drxx, dbstar.drxy)
-    j.bstar <- j.bstar[, match(old.ord, new.ord)]
+    j.bstar <- Q %*% j.beta
     v.bstar <- j.bstar %*% Sigma %*% t(j.bstar)
 
     # R Squared
     R2 <- t(rxy) %*% beta
-    dR2.drxx <- t(rxy) %*% dbeta.drxx
-    dR2.drxy <- 2 * t(rxy) %*% Rinv
-    j.R2 <- cbind(dR2.drxx, dR2.drxy)
-    j.R2 <- j.R2[, match(old.ord, new.ord)]
+    dR2.drxx <- -2 * (t(beta) %x% t(beta)) %*% t(Kpc)
+    dR2.drxy <- 2 * t(beta)
+    j.R2 <- cbind(dR2.drxx, dR2.drxy)[, match(old.ord, new.ord)]
     v.R2 <- j.R2 %*% Sigma %*% j.R2
-    v.R <- v.R2 / (4 * R2)
+    dR.drxx <- -1 * solve(sqrt(R2)) %*% (t(beta) %x% t(beta)) %*% t(Kpc)
+    dR.drxy <- solve(sqrt(R2)) %*% t(beta)
+    j.R <- cbind(dR.drxx, dR.drxy)[, match(old.ord, new.ord)]
+    v.R <- j.R %*% Sigma %*% j.R
+
+    ## Compute effective N if no N is supplied
+    if (inherits(se_var_mat, "matrix") & is.null(n)) {
+      n <- n_effective_R2(R2, v.R2, p)
+    }
 
     # Level Squared
     lev <- (t(rxy) %*% one) / sqrt(t(one) %*% Rxx %*% one)
     lev2 <- lev^2
-    dlev2.drxx <- -1 * ((t(rxy) %*% one) / (t(one) %*% Rxx %*% one))^2 %*% (t(one) %x% t(one)) %*% t(Kpc)
+    dlev2.drxx <- -2 * ((t(rxy) %*% one) / (t(one) %*% Rxx %*% one))^2 %*% (t(one) %x% t(one)) %*% t(Kpc)
     dlev2.drxy <- 2 * ((t(rxy) %*% one) / (t(one) %*% Rxx %*% one)) %*% t(one)
-    j.lev2 <- cbind(dlev2.drxx, dlev2.drxy)
-    j.lev2 <- j.lev2[, match(old.ord, new.ord)]
+    j.lev2 <- cbind(dlev2.drxx, dlev2.drxy)[, match(old.ord, new.ord)]
     v.lev2 <- j.lev2 %*% Sigma %*% j.lev2
-    v.lev <- v.lev2 / (4 * lev2)
+    dlev.drxx <- -1 * ((t(rxy) %*% one)/(t(one) %*% Rxx %*% one)^(3/2)) %*% (t(one) %x% t(one)) %*% t(Kpc)
+    dlev.drxy <- (1/(t(one) %*% Rxx %*% one)^(1/2)) %*% t(one)
+    j.lev <- cbind(dlev.drxx, dlev.drxy)[, match(old.ord, new.ord)]
+    v.lev <- j.lev %*% Sigma %*% j.lev
 
     # Pattern Squared
     pat <- (t(rxy) %*% bstar) / sqrt(t(bstar) %*% Rxx %*% bstar)
     pat2 <- pat^2
     dpat2.drxx <-
-      -1 * ((t(rxy) %*% bstar) / (t(bstar) %*% Rxx %*% bstar)) %*%
-      ((t(beta) %x% (t(rxy) %*% Q %*% Rinv)) + ((t(rxy) %*% Q %*% Rinv) %x% t(beta)) -
-         ((t(rxy) %*% bstar) / (t(bstar) %*% Rxx %*% bstar)) %*%
-         ((t(bstar) %x% t(bstar)) - (t(beta) %x% (t(bstar) %*% Rxx %*% Q %*% Rinv)))) %*% t(Kpc)
+      -2 * (
+        ((t(bstar) %*% rxy) / (t(bstar) %*% Rxx %*% bstar)) %*%
+          (
+            2 * (t(beta) %x% (t(rxy) %*% Q %*% Rinv)) +
+              ((t(bstar) %*% rxy) / ((t(bstar) %*% Rxx %*% bstar))) %*%
+              (
+                (t(bstar) %x% t(bstar)) -
+                  (t(beta) %x% (t(bstar) %*% Rxx %*% Q %*% Rinv)) -
+                  ((t(bstar) %*% Rxx %*% Q %*% Rinv) %x% t(beta))
+              )
+          )
+      ) %*% t(Kpc)
     dpat2.drxy <-
       2 * ((t(rxy) %*% bstar) / (t(bstar) %*% Rxx %*% bstar)) %*%
       (t(rxy) %*% Q %*% Rinv + t(bstar) -
          (solve((t(bstar) %*% Rxx %*% bstar)) %*% (t(rxy) %*% bstar %*% t(bstar) %*% Rxx %*% Q %*% Rinv) ))
-    j.pat2 <- cbind(dpat2.drxx, dpat2.drxy)
-    j.pat2 <- j.pat2[, match(old.ord, new.ord)]
+    j.pat2 <- cbind(dpat2.drxx, dpat2.drxy)[, match(old.ord, new.ord)]
     v.pat2 <- j.pat2 %*% Sigma %*% j.pat2
-    v.pat <- v.pat2 / (4 * pat2)
+    dpat.drxx <- -(t(bstar) %*% Rxx %*% bstar)^-.5 %*%
+      (2 * ((t(beta) %x% t(Rinv %*% Q %*% rxy))) +
+           (t(bstar) %*% Rxx %*% bstar)^-1 %*% rxy %*% bstar %*%
+             ((t(bstar) %x% t(bstar)) -
+              (t(beta) %x% (t(bstar) %*% Rxx %*% Q %*% Rinv)) -
+              (t(Rinv %*% Q %*% Rxx %*% bstar) %x% t(beta))
+              )
+       ) %*% t(Kpc)
+    dpat.drxy <-
+      (t(bstar) %*% Rxx %*% bstar)^(-1/2) %*% (
+        t(Rinv %*% Q %*% rxy) -
+          (solve(t(bstar) %*% Rxx %*% bstar) %*% t(rxy) %*% bstar %*% t(bstar) %*% Rxx %*% Q %*% Rinv) +
+          t(bstar)
+      )
+    j.pat <- cbind(dpat.drxx, dpat.drxy)[, match(old.ord, new.ord)]
+    v.pat <- j.pat %*% Sigma %*% j.pat
 
     # Level-Pattern Squared
     levpat <- (t(one) %*% Rxx %*% bstar) / sqrt(t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)
     levpat2 <- levpat^2
-    dlevpat2.drxx <-
-      (1 / (t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)) %*%
-      (((t(bstar) %x% t(one)) - (t(beta) %x% (t(one) %*% Rxx %*% Q  %*% Rinv))) -
-         (((t(one) %*% Rxx %*% one %*% t(one) %*% Rxx %*% bstar) /
-             (t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)) %*%
-            ((t(bstar) %x% t(bstar)) - (t(beta) %x% (t(bstar) %*% Rxx %*% Q  %*% Rinv)) -
-               ((t(bstar) %*% Rxx %*% Q %*% Rinv) %x% t(bstar))) +
-            (((t(one) %*% Rxx %*% bstar) / (t(one) %*% Rxx %*% one) ) %*% (t(one) %x% t(one))) )) %*% t(Kpc)
-    dlevpat2.drxy <-
-      (solve(t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one) %*% (t(one) %*% Rxx %*% Q %*% Rinv)) -
-        2 * (solve((t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)^2) %*%
-               (t(one) %*% Rxx %*% one %*% t(bstar) %*% Rxx %*% one)) %*%
-            (t(bstar) %*% Rxx %*% Q %*% Rinv)
-    j.levpat2 <- cbind(dlevpat2.drxx, dlevpat2.drxy)
-    j.levpat2 <- j.levpat2[, match(old.ord, new.ord)]
-    v.levpat2 <- j.levpat2 %*% Sigma %*% j.levpat2
-    v.levpat <- v.levpat2 / (4 * levpat2)
+    dlevpat.drxx <-
+      ((t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)^-1.5 %*%
+         t(bstar) %*% Rxx %*% one %*% (
+           t(one) %*% Rxx %*% one %*% (
+             (t(beta) %x% (t(bstar) %*% Rxx %*% Q %*% Rinv))
+             + (t(Rinv %*% Q %*% Rxx %*% bstar) %x% t(beta))
+             -  (t(bstar) %x% t(bstar))
+             ) - t(bstar) %*% Rxx %*% bstar %*% (one %x% one)
+           )
+       + 2 * (t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)^-.5 %*%
+         ((t(one) %x% t(bstar)) - (t(Rinv %*% Q %*% Rxx %*% one) %x% t(beta)))
+       ) %*% t(Kpc)
+    dlevpat.drxy <-
+      (t(bstar) %*% Rxx %*% bstar %*% t(one) %*% Rxx %*% one)^-.5 %*% (
+        t(Rinv %*% Q %*% Rxx %*% one) -
+          solve(t(bstar) %*% Rxx %*% bstar) %*% t(one) %*% Rxx %*% bstar %*% t(Rinv %*% Q %*% Rxx %*% bstar)
+      )
+    j.levpat <- cbind(dlevpat.drxx, dlevpat.drxy)[, match(old.ord, new.ord)]
+    v.levpat <- j.levpat %*% Sigma %*% j.levpat
 
     # Delta_Level
     v.deltalev <-
@@ -184,9 +219,9 @@ var_error_cpa <- function(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher
     # Adjusted Pattern Squared
     pat_adj <- sqrt(lev2) * sqrt(levpat2) + sqrt(max((1 - levpat2) * (R2_adj - lev2), 0))
     pat2_adj <- pat_adj^2
-    # TODO: Replace this with a proper delta method se_var (as R2_adj above)
-    v.pat_adj <- v.pat / (pat2 / pat2_adj)
-    v.pat2_adj <- v.pat2 / (pat2 / pat2_adj)^2
+    # TODO: Replace this with a delta method se_var (as R2_adj above)
+    v.pat_adj <- v.pat * (pat2 / pat2_adj)
+    v.pat2_adj <- v.pat2 * (pat2 / pat2_adj)^2
 
     # Adjusted Delta_Level
     v.deltalev_adj <-
@@ -212,25 +247,60 @@ var_error_cpa <- function(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher
   out <- list(
     beta = v.beta,
     bstar = v.bstar,
-    r.total = v.R,
-    r.total.squared = v.R2,
-    r.level = v.lev,
-    r.level.squared = v.lev2,
-    r.pattern = v.pat,
-    r.pattern.squared = v.pat2,
-    r.level.pattern = v.levpat,
-    r.level.pattern.squared = v.levpat2,
-    delta.r.squared.level = v.deltalev,
-    delta.r.squared.pattern = v.deltapat,
-    adjusted.r.total = v.R_adj,
-    adjusted.r.total.squared = v.R2_adj,
-    adjusted.r.pattern = v.pat_adj,
-    adjusted.r.pattern.squared = v.pat2_adj,
-    adjusted.delta.r.squared.level = v.deltalev_adj,
-    adjusted.delta.r.squared.pattern = v.deltapat_adj
+    r.total = as.vector(v.R),
+    r.total.squared = as.vector(v.R2),
+    r.level = as.vector(v.lev),
+    r.level.squared = as.vector(v.lev2),
+    r.pattern = as.vector(v.pat),
+    r.pattern.squared = as.vector(v.pat2),
+    r.level.pattern = as.vector(v.levpat),
+    delta.r.squared.level = as.vector(v.deltalev),
+    delta.r.squared.pattern = as.vector(v.deltapat),
+    adjusted.r.total = as.vector(v.R_adj),
+    adjusted.r.total.squared = as.vector(v.R2_adj),
+    adjusted.r.pattern = as.vector(v.pat_adj),
+    adjusted.r.pattern.squared = as.vector(v.pat2_adj),
+    adjusted.delta.r.squared.level = as.vector(v.deltalev_adj),
+    adjusted.delta.r.squared.pattern = as.vector(v.deltapat_adj)
   )
 
   class(out) <- "var_cpa"
 
   return(out)
+}
+
+#' Effective sample size
+#'
+#' Estimate an effective sample size for a statistic given the observed statistic
+#' and the estimated sampling error variance (cf. Revelle et al., 2017).
+#'
+#' `n_effective_R2` estimates the effective sample size for the _R_^2^ value from
+#' an OLS regression model, using the sampling error variance formula from Cohen
+#' et al. (2003).
+#'
+#' @param R2 Observed _R_^2^ value
+#' @param var_R2 Estimated sampling error variance for _R_^2^
+#' @param p Number of predictors in the regression model
+#'
+#' @return An effective sample size.
+#' @export
+#'
+#' @references
+#' Revelle, W., Condon, D. M., Wilt, J., French, J. A., Brown, A., & Elleman, L. G. (2017).
+#' Web- and phone-based data collection using planned missing designs.
+#' In N. G. Fielding, R. M. Lee, & G. Blank, _The SAGE Handbook of Online Research Methods_ (pp. 578–594).
+#' SAGE Publications. \doi{10.4135/9781473957992.n33}
+#'
+#' Cohen, J., Cohen, P., West, S. G., & Aiken, L. S. (2003).
+#' _Applied multiple regression/correlation analysis for the behavioral sciences_ (3rd ed.).
+#' Routledge. \doi{10.4324/9780203774441}
+#'
+#' @examples
+#' n_effective_R2(0.3953882, 0.0005397923, 5)
+n_effective_R2 <- function(R2, var_R2, p) {
+  f <- function(n) {
+    var_R2 - (4 * R2  * (1 - R2 ) * (n^2 - 2 * (p + 1) * n + (p + 1)^2) / (n^3 + 3*n^2 - n + 3))
+  }
+  n <- stats::uniroot(f, c(1, .Machine$integer.max))
+  return(n$root)
 }

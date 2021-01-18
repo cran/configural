@@ -5,8 +5,10 @@
 \name{prejudice}
 \alias{prejudice}
 \title{Correlations between study design moderators and effect sizes for prejudice reduction following intergroup contact}
-\format{list with entries \code{r} (observed correlations among moderators) and
-\code{k} (number of samples in meta-analysis)}
+\format{
+list with entries \code{r} (observed correlations among moderators) and
+\code{k} (number of samples in meta-analysis)
+}
 \usage{
 data(prejudice)
 }
@@ -23,6 +25,6 @@ data(prejudice)
 \references{
 Pettigrew, T. F., & Tropp, L. R. (2006).
 A meta-analytic test of intergroup contact theory.
-\emph{Journal of Personality and Social Psychology, 90}(5), 751–783. \url{https://doi.org/10/fmsz26}
+\emph{Journal of Personality and Social Psychology, 90}(5), 751–783. \doi{10.1037/0022-3514.90.5.751}
 }
 \keyword{datasets}

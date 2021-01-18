@@ -5,8 +5,14 @@
 \alias{fungible.cpa}
 \title{Locate extrema of fungible criterion profile patterns}
 \usage{
-\method{fungible}{cpa}(object, theta = 0.005, Nstarts = 1000,
-  MaxMin = c("min", "max"), silent = FALSE, ...)
+\method{fungible}{cpa}(
+  object,
+  theta = 0.005,
+  Nstarts = 1000,
+  MaxMin = c("min", "max"),
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted model object of class "cpa".}
@@ -39,7 +45,7 @@ mind <- cpa_mat(mindfulness ~ ES + A + C + Ex + O,
 mind_fung <- fungible(mind, Nstarts = 100)
 }
 \references{
-Wiernik, B. M., Wilmot, M. P., Davison, M. L., & Ones, D. S. (2019).
-\emph{Meta-analytic criterion profile analysis}.
-Manuscript submitted for publication, University of South Florida.
+Wiernik, B. M., Wilmot, M. P., Davison, M. L., & Ones, D. S. (2020).
+Meta-analytic criterion profile analysis.
+\emph{Psychological Methods}. \doi{10.1037/met0000305}
 }

@@ -5,29 +5,31 @@
 \alias{var_error_cpa}
 \title{Estimate the sampling error variance for criterion profile analysis parameters}
 \usage{
-var_error_cpa(Rxx, rxy, n, se_var_mat = "normal", adjust = c("fisher",
-  "pop", "cv"))
+var_error_cpa(
+  Rxx,
+  rxy,
+  n = NULL,
+  se_var_mat = NULL,
+  adjust = c("fisher", "pop", "cv")
+)
 }
 \arguments{
 \item{Rxx}{An intercorrelation matrix among the predictor variables}
 
 \item{rxy}{A vector of predictor–criterion correlations}
 
-\item{n}{The sample size}
+\item{n}{The sample size. If NULL and \code{se_var_mat} is provided, \code{n} will be estimated as the effective sample size based on \code{se_var_mat}. See \code{\link[=n_effective_R2]{n_effective_R2()}}.}
 
-\item{se_var_mat}{The method used to calculate the sampling covariance matrix for the unique elements of Rxx and rxy. Can be "normal" to estimate the covariance matrix using "n" or a matrix of sampling covariance values.}
+\item{se_var_mat}{A matrix of sampling covariance values for the elements of \code{Rxx} and \code{rxy}. If NULL, generated using the Normal theory covariance matrix based on \code{n}.}
 
 \item{adjust}{Method to adjust R-squared for overfitting. See \code{\link{adjust_Rsq}} for details.}
 }
 \value{
-A list containing sampling covariance matrices or sampling erorr variance estimates for CPA parameters
+A list containing sampling covariance matrices or sampling error variance estimates for CPA parameters
 }
 \description{
 Estimate the sampling error variance for criterion profile analysis parameters
 }
 \examples{
-\dontrun{
-  var_error_cpa(mindful_rho[1:5, 1:5], mindful_rho[1:5, 6],
-          n = 17060)
-}
+var_error_cpa(mindfulness$rho[1:5, 1:5], mindfulness$rho[1:5, 6], n = 17060)
 }
